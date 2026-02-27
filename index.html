@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="日々の考えや気づきを綴る雑記ブログ">
+    <title>雑記ブログ</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header class="site-header">
+        <div class="header-inner">
+            <a href="index.html" class="site-logo">雑記ブログ</a>
+            <nav class="header-nav">
+                <a href="index.html">ホーム</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Page -->
+    <div class="page-container">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-sticky">
+                <div class="profile-card">
+                    <div class="profile-avatar"></div>
+                    <div class="profile-info">
+                        <div class="profile-name">ブログ運営者</div>
+                        <p class="profile-bio">日々の考えや気づきを文章にして残しています。テクノロジー、読書、日常の観察など、ジャンルを問わず気になったことを書いています。</p>
+                        <button class="follow-btn">
+                            <svg viewBox="0 0 24 24">
+                                <path
+                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" />
+                            </svg>
+                            フォロー
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main -->
+        <div class="main-content">
+            <div class="content-tabs">
+                <button class="tab-btn active" data-tab="new">新着</button>
+                <button class="tab-btn" data-tab="popular">人気</button>
+            </div>
+            <div id="card-grid" class="card-grid">
+                <div class="loading">読み込み中…</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        &copy; 2026 雑記ブログ
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+
+</html>
