@@ -1,13 +1,77 @@
 (function () {
     'use strict';
 
+    // Sanity Config
+    var CONFIG = {
+        projectId: '6oepnks9',
+        dataset: 'production',
+        apiVersion: '2024-01-01'
+    };
+
     var path = location.pathname;
-    var isTop = path.endsWith('index.html') || path.endsWith('/');
+    var isTop = path.endsWith('index.html') || path.endsWith('/') || path === '';
     var isPost = path.endsWith('post.html');
 
     // SVG icons
     var heartOutline = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
     var heartFilled = '<svg viewBox="0 0 24 24" fill="#e8467f" stroke="#e8467f" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+
+    /**
+     * Sanity API Helper
+     */
+    function sanityFetch(query, params) {
+        var url = 'https://' + CONFIG.projectId + '.api.sanity.io/v' + CONFIG.apiVersion + '/data/query/' + CONFIG.dataset + '?query=' + encodeURIComponent(query);
+        if (params) {
+            for (var key in params) {
+                url += '&' + encodeURIComponent('$' + key) + '=' + encodeURIComponent('"' + params[key] + '"');
+            }
+        }
+        return fetch(url).then(function (res) { return res.json(); }).then(function (json) { return json.result; });
+    }
+
+    /**
+     * Simple Portable Text to HTML Converter
+     */
+    function portableTextToHtml(blocks) {
+        if (!blocks || !Array.isArray(blocks)) return '';
+        return blocks.map(function (block) {
+            if (block._type === 'block') {
+                var text = block.children.map(function (span) {
+                    var content = escapeHTML(span.text);
+                    if (span.marks && span.marks.length > 0) {
+                        span.marks.forEach(function (mark) {
+                            if (mark === 'strong') content = '<strong>' + content + '</strong>';
+                            if (mark === 'em') content = '<em>' + content + '</em>';
+                            if (mark === 'code') content = '<code>' + content + '</code>';
+                        });
+                    }
+                    return content;
+                }).join('');
+
+                var style = block.style || 'normal';
+                if (style === 'h1') return '<h1>' + text + '</h1>';
+                if (style === 'h2') return '<h2>' + text + '</h2>';
+                if (style === 'h3') return '<h3>' + text + '</h3>';
+                if (style === 'blockquote') return '<blockquote>' + text + '</blockquote>';
+                return '<p>' + text + '</p>';
+            }
+            if (block._type === 'image' && block.asset) {
+                // Asset references require expansion in GROQ, but if we have the URL already from expansion:
+                var imageUrl = block.asset.url || '';
+                if (!imageUrl && block.asset._ref) {
+                    // Simple URL builder for Sanity assets if not expanded
+                    var ref = block.asset._ref;
+                    var parts = ref.split('-');
+                    var id = parts[1];
+                    var dim = parts[2];
+                    var ext = parts[3];
+                    imageUrl = 'https://cdn.sanity.io/images/' + CONFIG.projectId + '/' + CONFIG.dataset + '/' + id + '-' + dim + '.' + ext;
+                }
+                return '<figure><img src="' + imageUrl + '" alt=""><figcaption>' + (block.caption || '') + '</figcaption></figure>';
+            }
+            return '';
+        }).join('');
+    }
 
     // --------------------------------------------------
     // トップページ: カードグリッド描画
@@ -16,11 +80,12 @@
         var gridEl = document.getElementById('card-grid');
         if (!gridEl) return;
 
-        fetch('content/posts.json')
-            .then(function (res) { return res.json(); })
+        var query = '*[_type == "post"] | order(date desc) { title, "slug": slug.current, date, "cover": cover.asset->url }';
+
+        sanityFetch(query)
             .then(function (posts) {
                 gridEl.innerHTML = '';
-                if (posts.length === 0) {
+                if (!posts || posts.length === 0) {
                     gridEl.innerHTML = '<div class="no-posts">記事がまだありません</div>';
                     return;
                 }
@@ -80,11 +145,12 @@
                     gridEl.appendChild(card);
                 });
             })
-            .catch(function () {
+            .catch(function (err) {
+                console.error(err);
                 gridEl.innerHTML = '<div class="loading">記事の読み込みに失敗しました</div>';
             });
 
-        // Tab UI (decorative – both show same content)
+        // Tab UI
         var tabs = document.querySelectorAll('.tab-btn');
         tabs.forEach(function (tab) {
             tab.addEventListener('click', function () {
@@ -95,7 +161,7 @@
     }
 
     // --------------------------------------------------
-    // 記事ページ: Markdownを読み込んで表示
+    // 記事ページ: Sanityからデータを取得して表示
     // --------------------------------------------------
     if (isPost) {
         var params = new URLSearchParams(location.search);
@@ -109,63 +175,50 @@
             return;
         }
 
-        fetch('content/posts.json')
-            .then(function (res) { return res.json(); })
-            .then(function (posts) {
-                var meta = posts.find(function (p) { return p.slug === slug; });
+        var query = '*[_type == "post" && slug.current == $slug][0] { title, "slug": slug.current, date, "cover": cover.asset->url, body }';
+
+        sanityFetch(query, { slug: slug })
+            .then(function (post) {
+                if (!post) {
+                    headerEl.innerHTML = '<p class="loading">記事が見つかりませんでした</p>';
+                    return;
+                }
+
+                // Title & Page title
+                document.title = post.title + ' – 雑記ブログ';
+                headerEl.innerHTML =
+                    '<h1>' + escapeHTML(post.title) + '</h1>' +
+                    (post.date ? '<p class="post-date">' + escapeHTML(post.date) + '</p>' : '');
 
                 // Cover image
-                if (meta && meta.cover) {
+                if (post.cover) {
+                    coverEl.innerHTML = '';
                     var coverImg = document.createElement('img');
-                    coverImg.src = meta.cover;
-                    coverImg.alt = meta.title || '';
+                    coverImg.src = post.cover;
+                    coverImg.alt = post.title || '';
                     coverEl.appendChild(coverImg);
                 }
 
-                // Markdown
-                fetch('content/posts/' + slug + '.md')
-                    .then(function (res) {
-                        if (!res.ok) throw new Error('not found');
-                        return res.text();
-                    })
-                    .then(function (md) {
-                        var html = marked.parse(md);
+                // Body (Portable Text → HTML)
+                bodyEl.innerHTML = portableTextToHtml(post.body);
 
-                        var tmp = document.createElement('div');
-                        tmp.innerHTML = html;
-                        var firstH1 = tmp.querySelector('h1');
-                        var title = firstH1 ? firstH1.textContent : slug;
-                        if (firstH1) firstH1.remove();
+                // Author footer date
+                var authorDateEl = document.getElementById('author-footer-date');
+                if (authorDateEl && post.date) {
+                    authorDateEl.textContent = post.date;
+                }
 
-                        document.title = title + ' – 雑記ブログ';
-
-                        var dateStr = meta ? meta.date : '';
-                        headerEl.innerHTML =
-                            '<h1>' + escapeHTML(title) + '</h1>' +
-                            (dateStr ? '<p class="post-date">' + escapeHTML(dateStr) + '</p>' : '');
-
-                        bodyEl.innerHTML = tmp.innerHTML;
-
-                        // Author footer date
-                        var authorDateEl = document.getElementById('author-footer-date');
-                        if (authorDateEl && dateStr) {
-                            authorDateEl.textContent = dateStr;
-                        }
-
-                        // Like button
-                        setupLikeButton(slug);
-                    })
-                    .catch(function () {
-                        headerEl.innerHTML = '<p class="loading">記事が見つかりませんでした</p>';
-                    });
+                // Like button
+                setupLikeButton(post.slug);
             })
-            .catch(function () {
+            .catch(function (err) {
+                console.error(err);
                 headerEl.innerHTML = '<p class="loading">記事情報の読み込みに失敗しました</p>';
             });
     }
 
     // --------------------------------------------------
-    // Like helpers (localStorage)
+    // Like helpers (localStorage) - Sanity移行後もそのまま使用
     // --------------------------------------------------
     function getLikeCount(slug) {
         try {
