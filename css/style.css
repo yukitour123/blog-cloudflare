@@ -381,6 +381,7 @@ ul {
     margin-bottom: 8px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -391,6 +392,7 @@ ul {
     margin-bottom: 10px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.6;
@@ -641,28 +643,28 @@ ul {
     font-size: 0.9em;
 }
 
-/* ===== Share Buttons ===== */
-.share-section {
+/* ===== Action Buttons ===== */
+.action-section {
     margin-top: 40px;
     padding: 24px 0;
     border-top: 1px solid #f0f0f0;
     text-align: center;
 }
 
-.share-title {
+.action-title {
     font-weight: bold;
     margin-bottom: 16px;
     font-size: 0.9rem;
 }
 
-.share-buttons {
+.action-list {
     display: flex;
     justify-content: center;
     gap: 12px;
     flex-wrap: wrap;
 }
 
-.share-btn {
+.action-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -674,26 +676,26 @@ ul {
     transition: transform 0.2s, opacity 0.2s;
 }
 
-.share-btn:hover {
+.action-btn:hover {
     transform: translateY(-2px);
     opacity: 0.9;
 }
 
-.share-btn svg {
+.action-btn svg {
     width: 20px;
     height: 20px;
     fill: currentColor;
 }
 
-.share-twitter {
+.action-twitter {
     background: #000;
 }
 
-.share-facebook {
+.action-facebook {
     background: #1877F2;
 }
 
-.share-hatebu {
+.action-hatebu {
     background: #00A4DE;
     font-weight: bold;
     font-family: sans-serif;
