@@ -93,7 +93,7 @@
                     var card = document.createElement('div');
                     card.className = 'article-card';
                     card.onclick = function () {
-                        location.href = 'post.html?slug=' + encodeURIComponent(post.slug);
+                        location.href = '/post.html?slug=' + encodeURIComponent(post.slug);
                     };
 
                     // Cover
