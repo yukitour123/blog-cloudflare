@@ -1,4 +1,4 @@
-import {defineField, defineType} from 'sanity'
+import { defineField, defineType } from 'sanity'
 
 export default defineType({
   name: 'post',
@@ -28,6 +28,26 @@ export default defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
+      name: 'excerpt',
+      title: '抜粋',
+      type: 'text',
+      rows: 3,
+      description: '一覧ページに表示される記事の要約（200文字以内）',
+      validation: (Rule) => Rule.max(200),
+    }),
+    defineField({
+      name: 'category',
+      title: 'カテゴリー',
+      type: 'reference',
+      to: [{ type: 'category' }],
+    }),
+    defineField({
+      name: 'tags',
+      title: 'タグ',
+      type: 'array',
+      of: [{ type: 'reference', to: [{ type: 'tag' }] }],
+    }),
+    defineField({
       name: 'cover',
       title: 'カバー画像',
       type: 'image',
@@ -45,7 +65,7 @@ export default defineType({
         },
         {
           type: 'image',
-          options: {hotspot: true},
+          options: { hotspot: true },
         },
       ],
     }),
@@ -56,10 +76,14 @@ export default defineType({
       title: 'title',
       date: 'date',
       media: 'cover',
+      categoryTitle: 'category.title',
     },
     prepare(selection) {
-      const {date} = selection
-      return {...selection, subtitle: date}
+      const { date, categoryTitle } = selection
+      return {
+        ...selection,
+        subtitle: [categoryTitle, date].filter(Boolean).join(' | '),
+      }
     },
   },
 })
