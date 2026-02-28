@@ -1,0 +1,13 @@
+{
+  "name": "blog-cloudflare",
+  "version": "1.0.0",
+  "description": "My personal blog deployed on Cloudflare Pages",
+  "main": "index.html",
+  "scripts": {
+    "dev": "wrangler pages dev .",
+    "deploy": "wrangler pages deploy ."
+  },
+  "devDependencies": {
+    "wrangler": "^3.114.17"
+  }
+}
